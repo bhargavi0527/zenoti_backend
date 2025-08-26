@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from controllers import user_controller, guest_controller, appointment_controller, center_controller, \
-    service_controller, provider_controller, room_controller, room_category_controller
+    service_controller, provider_controller, room_controller, room_category_controller, product_controller
 
 app = FastAPI(title="My FastAPI Project")
 
@@ -24,6 +24,7 @@ app.include_router(service_controller.router)
 app.include_router(provider_controller.router)
 app.include_router(room_controller.router)
 app.include_router(room_category_controller.router)
+app.include_router(product_controller.router)
 @app.get("/")
 def root():
     return {"message": "Welcome to FastAPI 🚀"}

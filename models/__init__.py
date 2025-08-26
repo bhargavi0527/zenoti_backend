@@ -7,3 +7,4 @@ from .service import Service
 # any new models you add in the future
 from .room_category import RoomCategory
 from .room import Room
+from .products import Product
