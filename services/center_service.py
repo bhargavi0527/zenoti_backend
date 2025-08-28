@@ -1,7 +1,5 @@
-# services/center_service.py
 from sqlalchemy.orm import Session
-
-from models import Center
+from models.center import Center
 from schemas.center_schema import CenterCreate
 
 def create_center(db: Session, data: CenterCreate) -> Center:

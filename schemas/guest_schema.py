@@ -6,8 +6,9 @@ from datetime import date, datetime
 
 
 class GuestBase(BaseModel):
-    center_id: str
-    center_name: str
+    center_id: Optional[str] = None  # Optional
+    center_name: Optional[str] = None  # Optional
+
     username: str
     first_name: str
     middle_name: Optional[str] = None

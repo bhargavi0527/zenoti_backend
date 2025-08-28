@@ -13,7 +13,7 @@ class Center(Base):
     city = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     # New fields
-
+    code = Column(String, unique=True, nullable=False)
     display_name = Column(String, nullable=True)  # human readable name
     country = Column(String, nullable=True)
     state = Column(String, nullable=True)

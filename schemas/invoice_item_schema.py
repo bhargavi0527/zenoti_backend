@@ -10,7 +10,7 @@ class InvoiceItemBase(BaseModel):
     category: Optional[str] = None
     sub_category: Optional[str] = None
     business_unit: Optional[str] = None
-    quantity: Optional[int] = 1
+    item_quantity: Optional[int] = 1
     unit_price: Optional[float] = 0
     item_discount: Optional[float] = 0
     net_price: Optional[float] = 0

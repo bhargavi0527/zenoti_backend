@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Date, DateTime, ForeignKey
+from sqlalchemy import Column, String, Float, Date, DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from database.db import Base
@@ -35,6 +35,10 @@ class Invoice(Base):
     lp = Column(Float, default=0)
     gift_card = Column(Float, default=0)
     prepaid_card = Column(Float, default=0)
+
+    # ✅ Add timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relations
     guest_id = Column(UUID(as_uuid=True), ForeignKey("guests.id"))

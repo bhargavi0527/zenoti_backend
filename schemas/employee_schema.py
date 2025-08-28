@@ -10,12 +10,11 @@ class EmployeeBase(BaseModel):
     job_code: Optional[str] = None
     designation: Optional[str] = None
     department: Optional[str] = None
-    specialization: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     center_code: Optional[str] = None
     zone: Optional[str] = None
-    hire_date: Optional[date] = None
+
     is_active: Optional[bool] = True
 
 
