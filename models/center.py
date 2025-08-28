@@ -12,3 +12,10 @@ class Center(Base):
     address = Column(String, nullable=True)
     city = Column(String, nullable=True)
     phone = Column(String, nullable=True)
+    # New fields
+
+    display_name = Column(String, nullable=True)  # human readable name
+    country = Column(String, nullable=True)
+    state = Column(String, nullable=True)
+    contact_info_phone = Column(String, nullable=True)
+    contact_info_email = Column(String, nullable=True)

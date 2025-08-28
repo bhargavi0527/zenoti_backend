@@ -8,3 +8,6 @@ from .service import Service
 from .room_category import RoomCategory
 from .room import Room
 from .products import Product
+from .employee import Employee
+from .invoice import Invoice
+from .invoiceItem import InvoiceItem
