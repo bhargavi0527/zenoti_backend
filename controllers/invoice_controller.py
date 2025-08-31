@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.db import get_db
+from models import Invoice
 from services import invoice_service
 from schemas.invoice_schema import InvoiceCreate, InvoiceUpdate, InvoiceOut
 from typing import List
@@ -41,3 +42,11 @@ def delete_invoice(invoice_id: uuid.UUID, db: Session = Depends(get_db)):
     if not deleted:
         raise HTTPException(status_code=404, detail="Invoice not found")
     return {"message": "Invoice deleted"}
+
+
+@router.get("/guest/{guest_id}/ids", response_model=list[str])
+def get_invoice_ids_by_guest(guest_id: str, db: Session = Depends(get_db)):
+    invoices = db.query(Invoice.id).filter(Invoice.guest_id == guest_id).all()
+
+    # return empty list if none
+    return [str(inv[0]) for inv in invoices]

@@ -1,5 +1,5 @@
 # services/appointment_service.py
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 from sqlalchemy.orm import Session
 
@@ -58,3 +58,14 @@ def update_appointment(
     db.commit()
     db.refresh(appointment)
     return appointment
+def get_appointments_by_date(db: Session, appointment_date: date):
+    """Fetch all appointment slots for a given date"""
+    start_datetime = datetime.combine(appointment_date, datetime.min.time())
+    end_datetime = datetime.combine(appointment_date, datetime.max.time())
+
+    return (
+        db.query(Appointment)
+        .filter(Appointment.scheduled_time >= start_datetime)
+        .filter(Appointment.scheduled_time <= end_datetime)
+        .all()
+    )

@@ -11,3 +11,7 @@ from .products import Product
 from .employee import Employee
 from .invoice import Invoice
 from .invoiceItem import InvoiceItem
+from .business_unit import BusinessUnit
+from .package import Package
+from .category import Category
+from .invoice_payment import InvoicePayment

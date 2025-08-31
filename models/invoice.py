@@ -28,22 +28,15 @@ class Invoice(Base):
     invoice_discount = Column(Float, default=0)
     net_invoice_value = Column(Float, default=0)
 
-    cash = Column(Float, default=0)
-    card = Column(Float, default=0)
-    check = Column(Float, default=0)
-    custom = Column(Float, default=0)
-    lp = Column(Float, default=0)
-    gift_card = Column(Float, default=0)
-    prepaid_card = Column(Float, default=0)
-
-    # ✅ Add timestamps
+    # ✅ Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relations
+    # ✅ Relations
     guest_id = Column(UUID(as_uuid=True), ForeignKey("guests.id"))
     employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"))
 
     guest = relationship("Guest")
     employee = relationship("Employee")
-    items = relationship("InvoiceItem", back_populates="invoice")
+    items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
+    payments = relationship("InvoicePayment", back_populates="invoice", cascade="all, delete-orphan")

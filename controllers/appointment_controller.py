@@ -6,9 +6,9 @@ from database.db import get_db
 from models.appointment import Appointment
 from schemas.appointment_schema import AppointmentCreate, AppointmentRead, AppointmentResponse, AppointmentUpdate
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, date
 
-from services.appointment_service import get_appointments
+from services.appointment_service import get_appointments, get_appointments_by_date
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
@@ -81,3 +81,11 @@ def update_appointment_endpoint(
         **appointment.__dict__,
         message="Appointment updated successfully"
     )
+@router.get("/slots/", response_model=List[AppointmentRead])
+def get_slots_by_date(
+    appointment_date: date = Query(..., description="Date in YYYY-MM-DD"),
+    db: Session = Depends(get_db)
+):
+    """Fetch appointment slots for a given date"""
+    appointments = get_appointments_by_date(db, appointment_date)
+    return appointments

@@ -26,5 +26,6 @@ class InvoiceItem(Base):
     row_num = Column(Integer, nullable=True)
     item_row_num = Column(Integer, nullable=True)
 
+    # ✅ Relation
     invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id"))
     invoice = relationship("Invoice", back_populates="items")
