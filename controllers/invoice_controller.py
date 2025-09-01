@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.db import get_db
-from models import Invoice
+from models import Invoice, Appointment,Guest
 from services import invoice_service
 from schemas.invoice_schema import InvoiceCreate, InvoiceUpdate, InvoiceOut
 from typing import List
 import uuid
+from datetime import datetime   # ✅ added
 
 router = APIRouter(prefix="/invoices", tags=["Invoices"])
 
@@ -44,9 +45,37 @@ def delete_invoice(invoice_id: uuid.UUID, db: Session = Depends(get_db)):
     return {"message": "Invoice deleted"}
 
 
-@router.get("/guest/{guest_id}/ids", response_model=list[str])
-def get_invoice_ids_by_guest(guest_id: str, db: Session = Depends(get_db)):
-    invoices = db.query(Invoice.id).filter(Invoice.guest_id == guest_id).all()
+@router.post("/get-or-create/{guest_id}")
+def get_or_create_invoice_for_guest(guest_id: uuid.UUID, db: Session = Depends(get_db)):
+    # 🔹 Check if guest exists
+    guest = db.query(Guest).filter(Guest.id == guest_id).first()
+    if not guest:
+        raise HTTPException(status_code=404, detail="Guest not found")
 
-    # return empty list if none
-    return [str(inv[0]) for inv in invoices]
+    # 🔹 Try to get existing invoice for this guest
+    invoice = db.query(Invoice).filter(Invoice.guest_id == guest_id).first()
+
+    if invoice:
+        return {
+            "message": "Invoice already exists",
+            "invoice_id": str(invoice.id),
+            "invoice_no": invoice.invoice_no,
+        }
+
+    # 🔹 If not, create a new invoice
+    new_invoice = Invoice(
+        invoice_no=f"INV-{uuid.uuid4().hex[:8]}",
+        guest_id=guest_id,
+        gross_invoice_value=0,
+        net_invoice_value=0,
+        total_collection=0,
+    )
+    db.add(new_invoice)
+    db.commit()
+    db.refresh(new_invoice)
+
+    return {
+        "message": "New invoice created",
+        "invoice_id": str(new_invoice.id),
+        "invoice_no": new_invoice.invoice_no,
+    }
