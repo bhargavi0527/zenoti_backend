@@ -47,6 +47,7 @@ class GuestUpdate(BaseModel):
 
 class GuestResponse(GuestBase):
     id: uuid.UUID
+    center_id: Optional[uuid.UUID] = None
     guest_code: str
     created_at: datetime
     updated_at: datetime

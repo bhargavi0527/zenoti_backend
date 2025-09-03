@@ -15,3 +15,5 @@ from .business_unit import BusinessUnit
 from .package import Package
 from .category import Category
 from .invoice_payment import InvoicePayment
+from .sale import Sale
+from .collection import Collection

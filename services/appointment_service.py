@@ -1,25 +1,35 @@
 # services/appointment_service.py
+from typing import List
+
+
 from datetime import datetime, date
 from typing import Optional
 from sqlalchemy.orm import Session
-
-from models import Appointment
+from models import Appointment, Sale
 from schemas.appointment_schema import AppointmentCreate
+import uuid
 
 def create_appointment(db: Session, data: AppointmentCreate) -> Appointment:
     appointment = Appointment(**data.dict())
     db.add(appointment)
     db.commit()
     db.refresh(appointment)
+
+    # 🔹 Automatically create a Sale linked to this appointment
+    sale = Sale(appointment_id=appointment.id, amount=0.0)
+    db.add(sale)
+    db.commit()
+    db.refresh(sale)
+
     return appointment
 
 def get_appointments(
     db: Session,
     status: Optional[str] = None,
-    provider_id: Optional[str] = None,
-    center_id: Optional[str] = None,
+    provider_id: Optional[uuid.UUID] = None,
+    center_id: Optional[uuid.UUID] = None,
     start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None,
 ):
     query = db.query(Appointment)
 
@@ -36,36 +46,18 @@ def get_appointments(
 
     return query.all()
 
-def get_appointment(db: Session, appointment_id: str):
+def get_appointment(db: Session, appointment_id: uuid.UUID):
     return db.query(Appointment).filter(Appointment.id == appointment_id).first()
-def update_appointment(
-    db: Session, appointment_id: str, data: dict
-) -> Optional[Appointment]:
-    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
-    if not appointment:
-        return None
 
-    if "scheduled_time" in data and data["scheduled_time"]:
-        appointment.scheduled_time = data["scheduled_time"]
-        # If appointment_date not provided, auto-derive from scheduled_time
-        if "appointment_date" not in data or not data["appointment_date"]:
-            appointment.appointment_date = data["scheduled_time"].date()
+def get_guest_appointments(db: Session, guest_id: uuid.UUID):
+    return db.query(Appointment).filter(Appointment.guest_id == guest_id).all()
 
-    if "appointment_date" in data and data["appointment_date"]:
-        appointment.appointment_date = data["appointment_date"]
-
-    appointment.updated_at = datetime.utcnow()
-    db.commit()
-    db.refresh(appointment)
-    return appointment
-def get_appointments_by_date(db: Session, appointment_date: date):
-    """Fetch all appointment slots for a given date"""
-    start_datetime = datetime.combine(appointment_date, datetime.min.time())
-    end_datetime = datetime.combine(appointment_date, datetime.max.time())
-
+def get_center_appointments(db: Session, center_id: uuid.UUID):
+    return db.query(Appointment).filter(Appointment.center_id == center_id).all()
+def get_appointments_by_date(db: Session, appointment_date: date) -> List[Appointment]:
+    """Fetch appointments for a specific date"""
     return (
         db.query(Appointment)
-        .filter(Appointment.scheduled_time >= start_datetime)
-        .filter(Appointment.scheduled_time <= end_datetime)
+        .filter(Appointment.appointment_date == appointment_date)
         .all()
     )

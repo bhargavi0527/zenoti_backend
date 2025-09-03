@@ -1,13 +1,16 @@
+import uuid
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database.db import get_db
+from models import Sale
 from models.appointment import Appointment
 from schemas.appointment_schema import AppointmentCreate, AppointmentRead, AppointmentResponse, AppointmentUpdate
 from uuid import uuid4
 from datetime import datetime, date
 
+from schemas.sales_schema import SaleResponse
 from services.appointment_service import get_appointments, get_appointments_by_date
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
@@ -89,3 +92,9 @@ def get_slots_by_date(
     """Fetch appointment slots for a given date"""
     appointments = get_appointments_by_date(db, appointment_date)
     return appointments
+@router.get("/{appointment_id}/sale", response_model=SaleResponse)
+def get_sale_for_appointment(appointment_id: uuid.UUID, db: Session = Depends(get_db)):
+    sale = db.query(Sale).filter(Sale.appointment_id == appointment_id).first()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sale not found for this appointment")
+    return sale

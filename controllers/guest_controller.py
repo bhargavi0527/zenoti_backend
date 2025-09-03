@@ -1,7 +1,12 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.db import get_db
+from models import Appointment, Invoice
+from schemas.appointment_schema import AppointmentRead
 from schemas.guest_schema import GuestCreate, GuestResponse, GuestUpdate
+from schemas.invoice_schema import InvoiceOut
 from services.guest_service import (
     create_guest, get_guests, get_guest_by_email,
     get_guest_by_code, get_guest_by_id,
@@ -18,10 +23,9 @@ def register_guest(guest: GuestCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
     return create_guest(db, guest)
 
-# ✅ READ all
 @router.get("/", response_model=list[GuestResponse])
-def list_guests(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return get_guests(db, skip=skip, limit=limit)
+def list_guests(db: Session = Depends(get_db)):
+    return get_guests(db)
 
 # ✅ READ by id
 @router.get("/{guest_id}", response_model=GuestResponse)
@@ -54,3 +58,10 @@ def delete_guest_route(guest_id: str, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Guest not found")
     return {"detail": "Guest deleted successfully"}
+@router.get("/{guest_id}/appointments", response_model=list[AppointmentRead])
+def get_guest_appointments(guest_id: uuid.UUID, db: Session = Depends(get_db)):
+    return db.query(Appointment).filter(Appointment.guest_id == guest_id).all()
+
+@router.get("/{guest_id}/invoices", response_model=list[InvoiceOut])
+def get_guest_invoices(guest_id: uuid.UUID, db: Session = Depends(get_db)):
+    return db.query(Invoice).filter(Invoice.guest_id == guest_id).all()

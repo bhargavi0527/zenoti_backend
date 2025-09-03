@@ -1,8 +1,7 @@
 from sqlalchemy.orm import Session
-from models.invoice import Invoice
+from models import Invoice, Collection
 from schemas.invoice_schema import InvoiceCreate, InvoiceUpdate
 import uuid
-
 
 def create_invoice(db: Session, invoice: InvoiceCreate):
     new_invoice = Invoice(**invoice.dict())
@@ -11,14 +10,11 @@ def create_invoice(db: Session, invoice: InvoiceCreate):
     db.refresh(new_invoice)
     return new_invoice
 
-
 def get_invoices(db: Session):
     return db.query(Invoice).all()
 
-
 def get_invoice(db: Session, invoice_id: uuid.UUID):
     return db.query(Invoice).filter(Invoice.id == invoice_id).first()
-
 
 def update_invoice(db: Session, invoice_id: uuid.UUID, invoice_update: InvoiceUpdate):
     invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
@@ -30,10 +26,13 @@ def update_invoice(db: Session, invoice_id: uuid.UUID, invoice_update: InvoiceUp
     db.refresh(invoice)
     return invoice
 
-
 def delete_invoice(db: Session, invoice_id: uuid.UUID):
     invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if invoice:
         db.delete(invoice)
         db.commit()
     return invoice
+
+# 🔹 Relationship helpers
+def get_invoice_collections(db: Session, invoice_id: uuid.UUID):
+    return db.query(Collection).filter(Collection.invoice_id == invoice_id).all()

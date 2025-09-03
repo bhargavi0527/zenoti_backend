@@ -23,6 +23,11 @@ class AppointmentCreate(AppointmentBase):
             return values["scheduled_time"].date()
         return v
 
+    guest_id: UUID
+    center_id: UUID
+    service_id: UUID
+    appointment_time: datetime
+
 
 class AppointmentRead(AppointmentBase):
     id: UUID
@@ -35,6 +40,15 @@ class AppointmentRead(AppointmentBase):
 
 class AppointmentResponse(AppointmentRead):
     message: str
+
+class AppointmentOut(BaseModel):
+    id: UUID
+    guest_id: UUID
+    center_id: UUID
+    service_id: UUID
+    appointment_time: datetime
+    created_at: datetime
+
 class AppointmentUpdate(BaseModel):
     scheduled_time: Optional[datetime] = None
     appointment_date: Optional[date] = None

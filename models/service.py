@@ -2,6 +2,8 @@ from sqlalchemy import Column, String, Integer, Float
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
+from sqlalchemy.orm import relationship
+
 from database.db import Base
 def generate_service_code():
     # Example: "SERV" + 4 random digits
@@ -16,3 +18,4 @@ class Service(Base):
     duration = Column(Integer, nullable=False)  # in minutes
     price = Column(Float, nullable=False)
     category = Column(String, nullable=True)
+    appointments = relationship("Appointment", back_populates="service")

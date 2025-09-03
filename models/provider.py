@@ -2,6 +2,8 @@ from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
+from sqlalchemy.orm import relationship
+
 from database.db import Base
 
 class Provider(Base):
@@ -15,3 +17,5 @@ class Provider(Base):
     phone = Column(String, nullable=True)
 
     center_id = Column(UUID(as_uuid=True), ForeignKey("centers.id"), nullable=False)
+    center = relationship("Center", back_populates="providers")
+    appointments = relationship("Appointment", back_populates="provider")
