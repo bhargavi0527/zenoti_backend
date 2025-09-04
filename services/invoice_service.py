@@ -1,10 +1,26 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 from models import Invoice, Collection
 from schemas.invoice_schema import InvoiceCreate, InvoiceUpdate
 import uuid
 
+
+def generate_invoice_no(db: Session) -> str:
+    # Example: INV-2025-0001
+    year = datetime.utcnow().year
+    count = db.query(Invoice).count() + 1
+    return f"INV-{year}-{count:04d}"
+
+
 def create_invoice(db: Session, invoice: InvoiceCreate):
-    new_invoice = Invoice(**invoice.dict())
+    invoice_data = invoice.dict()
+
+    # Auto-generate invoice_no
+    invoice_no = generate_invoice_no(db)
+    invoice_data["invoice_no"] = invoice_no
+
+    new_invoice = Invoice(**invoice_data)
     db.add(new_invoice)
     db.commit()
     db.refresh(new_invoice)

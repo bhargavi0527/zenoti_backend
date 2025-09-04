@@ -39,3 +39,8 @@ class Invoice(Base):
     collections = relationship("Collection", back_populates="invoice", cascade="all, delete-orphan")
     items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
     payments = relationship("InvoicePayment", back_populates="invoice", cascade="all, delete-orphan")
+
+    @property
+    def total_amount(self):
+        """Computed field = gross - discount (same as net value)."""
+        return self.net_invoice_value
