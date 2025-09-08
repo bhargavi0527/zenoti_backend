@@ -1,41 +1,47 @@
-from sqlalchemy.orm import Session
-from models import Sale, Invoice
-from schemas.sales_schema import SaleCreate, SaleUpdate
 import uuid
+from sqlalchemy.orm import Session
+from models import Sale, Invoice, Appointment
+from schemas.sales_schema import SaleCreate, SaleUpdate
+
 
 def create_sale(db: Session, sale_data: SaleCreate) -> Sale:
-    # ✅ Create Sale
-    sale = Sale(
-        sale_no=sale_data.sale_no,
-        gross_value=sale_data.gross_value,
-        discount_value=sale_data.discount_value,
-        net_value=sale_data.net_value,
-        remarks=sale_data.remarks,
-        appointment_id=sale_data.appointment_id,
+    # 1. Fetch appointment
+    appointment = db.query(Appointment).filter(Appointment.id == sale_data.appointment_id).first()
+    if not appointment:
+        raise ValueError("Appointment not found")
 
+    # 2. Automatically generate sale_no
+    sale_no = f"SALE-{uuid.uuid4().hex[:8]}"
+
+    # 3. Create sale based on appointment values
+    sale = Sale(
+        sale_no=sale_no,
+        gross_value=appointment.gross_value,
+        discount_value=appointment.discount_value,
+        net_value=appointment.net_value,
+        remarks=sale_data.remarks,
+        appointment_id=appointment.id
     )
     db.add(sale)
     db.commit()
     db.refresh(sale)
 
-    # ✅ Automatically create Invoice for this Sale
-    invoice = Invoice(
-        id=uuid.uuid4(),
-        invoice_no=f"INV-{sale.sale_no}",  # Example: INV-SALE-1001
-        sale_id=sale.id,
-        appointment_id=sale.appointment_id,
-        amount_due=sale.net_value,
-        status="UNPAID"   # default status
-    )
-    db.add(invoice)
-    db.commit()
-    db.refresh(invoice)
-
-    # attach invoice to sale object (for response)
-    sale.invoice = invoice
-
-    return sale
-
+    # # 4. Create invoice automatically
+    # invoice = Invoice(
+    #     id=uuid.uuid4(),
+    #     invoice_no=f"INV-{sale.sale_no}",
+    #     sale_id=sale.id,
+    #     appointment_id=appointment.id,
+    #     amount_due=sale.net_value,
+    #     status="UNPAID"
+    # )
+    # db.add(invoice)
+    # db.commit()
+    # db.refresh(invoice)
+    #
+    # # Attach invoice for response
+    # sale.invoice = invoice
+    # return sale
 
 def get_sale(db: Session, sale_id: uuid.UUID) -> Sale | None:
     return db.query(Sale).filter(Sale.id == sale_id).first()

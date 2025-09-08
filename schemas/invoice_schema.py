@@ -24,7 +24,7 @@ class InvoiceCreate(InvoiceBase):
     sale_id: UUID
     guest_id: UUID
     employee_id: Optional[UUID] = None
-    invoice_no: Optional[str] = None  # system can auto-generate
+    invoice_no: Optional[str] = None  # can auto-generate
 
 
 class InvoiceUpdate(InvoiceBase):
@@ -38,11 +38,10 @@ class InvoiceOut(InvoiceBase):
     id: UUID
     invoice_no: str
     sale_id: Optional[UUID] = None
-
     guest_id: UUID
     employee_id: Optional[UUID] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Pydantic v2 replacement for orm_mode

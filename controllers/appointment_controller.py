@@ -32,9 +32,9 @@ def create_appointment(appointment: AppointmentCreate, db: Session = Depends(get
         service_id=appointment.service_id,
         status=appointment.status,
         notes=appointment.notes,
-        scheduled_time=appointment.scheduled_time,
-        appointment_date=appointment_date,   # ✅ new field
-        guest_id=appointment.guest_id,       # ✅ only guest_id
+        scheduled_time=appointment.scheduled_time,  # ✅ match model
+        appointment_date=appointment_date,
+        guest_id=appointment.guest_id,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )
@@ -47,7 +47,6 @@ def create_appointment(appointment: AppointmentCreate, db: Session = Depends(get
         **db_appointment.__dict__,
         message="Appointment created successfully"
     )
-
 
 @router.get("/{appointment_id}", response_model=AppointmentRead)
 def get_appointment(appointment_id: str, db: Session = Depends(get_db)):
