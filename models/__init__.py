@@ -17,3 +17,4 @@ from .category import Category
 from .invoice_payment import InvoicePayment
 from .sale import Sale
 from .collection import Collection
+from .offer_discount import OfferDiscount

@@ -10,22 +10,20 @@ class AppointmentBase(BaseModel):
     service_id: UUID
     status: str
     notes: Optional[str] = None
-    scheduled_time: datetime   # ✅ match model
+    scheduled_time: datetime              # ✅ unified name
     guest_id: UUID
     appointment_date: Optional[date] = None
 
-
-class AppointmentCreate(AppointmentBase):
     @field_validator("appointment_date", mode="before")
     def set_appointment_date(cls, v, values):
         """Auto-fill appointment_date from scheduled_time if not provided"""
-        if (
-            v is None
-            and "scheduled_time" in values
-            and values["scheduled_time"]
-        ):
+        if v is None and "scheduled_time" in values and values["scheduled_time"]:
             return values["scheduled_time"].date()
         return v
+
+
+class AppointmentCreate(AppointmentBase):
+    pass  # no extra fields needed
 
 
 class AppointmentRead(AppointmentBase):
@@ -34,7 +32,7 @@ class AppointmentRead(AppointmentBase):
     updated_at: datetime
 
     class Config:
-        from_attributes = True   # ✅ for SQLAlchemy -> Pydantic
+        from_attributes = True   # ✅ SQLAlchemy -> Pydantic mapping
 
 
 class AppointmentResponse(AppointmentRead):
@@ -46,7 +44,7 @@ class AppointmentOut(BaseModel):
     guest_id: UUID
     center_id: UUID
     service_id: UUID
-    scheduled_time: datetime   # ✅ match model
+    scheduled_time: datetime             # ✅ consistent
     created_at: datetime
 
 
@@ -57,10 +55,6 @@ class AppointmentUpdate(BaseModel):
     @field_validator("appointment_date", mode="before")
     def set_appointment_date(cls, v, values):
         """Auto-update appointment_date if only scheduled_time is given"""
-        if (
-            v is None
-            and "scheduled_time" in values
-            and values["scheduled_time"]
-        ):
+        if v is None and "scheduled_time" in values and values["scheduled_time"]:
             return values["scheduled_time"].date()
         return v

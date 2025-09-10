@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy.orm import Session
-from models import Invoice, Collection
+from models import Invoice, Collection, Sale, sale
 from schemas.invoice_schema import InvoiceCreate, InvoiceUpdate
 import uuid
 
@@ -13,18 +13,22 @@ def generate_invoice_no(db: Session) -> str:
     return f"INV-{year}-{count:04d}"
 
 
-def create_invoice(db: Session, invoice: InvoiceCreate):
-    invoice_data = invoice.dict()
+def create_invoice(db: Session, sale_id: uuid.UUID) -> Invoice:
+    sale = db.query(Sale).filter(Sale.id == sale_id).first()
+    if not sale:
+        raise ValueError("Sale not found")
 
-    # Auto-generate invoice_no
-    invoice_no = generate_invoice_no(db)
-    invoice_data["invoice_no"] = invoice_no
-
-    new_invoice = Invoice(**invoice_data)
-    db.add(new_invoice)
+    invoice = Invoice(
+        id=uuid.uuid4(),
+        invoice_no=f"INV-{sale.sale_no}-{str(uuid.uuid4())[:8]}",
+        sale_id=sale.id,
+        net_invoice_value=sale.net_value,
+    )
+    db.add(invoice)
     db.commit()
-    db.refresh(new_invoice)
-    return new_invoice
+    db.refresh(invoice)
+
+    return invoice
 
 def get_invoices(db: Session):
     return db.query(Invoice).all()

@@ -13,8 +13,8 @@ router = APIRouter(prefix="/invoices", tags=["Invoices"])
 
 
 @router.post("/", response_model=InvoiceOut)
-def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
-    return invoice_service.create_invoice(db, invoice)
+def create_invoice_endpoint(invoice: InvoiceCreate, db: Session = Depends(get_db)):
+    return invoice_service.create_invoice(db, sale_id=invoice.sale_id)
 
 
 @router.get("/", response_model=List[InvoiceOut])

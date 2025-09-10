@@ -44,3 +44,7 @@ class Invoice(Base):
     def total_amount(self):
         """Computed field = gross - discount (same as net value)."""
         return self.net_invoice_value
+
+    @property
+    def balance_due(self):
+        return self.net_invoice_value - self.total_collection

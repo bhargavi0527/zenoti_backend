@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from controllers import user_controller, guest_controller, appointment_controller, center_controller, \
     service_controller, provider_controller, room_controller, room_category_controller, product_controller, \
     employee_controller, invoice_item_controller, invoice_controller, package_controller, business_unit_controller, \
-    category_controller, invoice_payment_controller, sales_controller, collection_controller
+    category_controller, invoice_payment_controller, sales_controller, collection_controller, offer_discount_controller
 
 app = FastAPI(title="My FastAPI Project")
 
@@ -36,6 +36,7 @@ app.include_router(category_controller.router)
 app.include_router(invoice_payment_controller.router)
 app.include_router(sales_controller.router)
 app.include_router(collection_controller.router)
+app.include_router(offer_discount_controller.router)
 @app.get("/")
 def root():
     return {"message": "Welcome to FastAPI 🚀"}

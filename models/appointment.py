@@ -27,4 +27,5 @@ class Appointment(Base):
     guest = relationship("Guest", back_populates="appointments")
     provider = relationship("Provider", back_populates="appointments")
     service = relationship("Service", back_populates="appointments")
+
     sale = relationship("Sale", back_populates="appointment", uselist=False)

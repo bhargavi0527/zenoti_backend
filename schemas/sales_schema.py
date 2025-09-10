@@ -5,19 +5,31 @@ from datetime import datetime
 from .invoice_schema import InvoiceOut
 
 
+# -------------------
+# Base Schema (shared fields)
+# -------------------
 class SaleBase(BaseModel):
-    sale_no: Optional[str] = None  # can auto-generate
+    sale_no: Optional[str] = None  # auto-generated
     gross_value: float = 0
     discount_value: float = 0
     net_value: float = 0
     remarks: Optional[str] = None
 
 
+# -------------------
+# Create Schema (request body)
+# -------------------
 class SaleCreate(BaseModel):
-    appointment_id: UUID  # appointment must exist
+    appointment_id: UUID  # Only appointment_id is required
+    item_type: str  # "product", "service", "package"
+    item_id: UUID  # which product/service/package
+    discount_id: Optional[UUID] = None  # applied offer/discount (optional)
     remarks: Optional[str] = None
 
 
+# -------------------
+# Update Schema
+# -------------------
 class SaleUpdate(BaseModel):
     gross_value: Optional[float] = None
     discount_value: Optional[float] = None
@@ -25,9 +37,14 @@ class SaleUpdate(BaseModel):
     remarks: Optional[str] = None
 
 
+# -------------------
+# Response Schemas
+# -------------------
 class SaleOut(BaseModel):
     id: UUID
     appointment_id: UUID
+    gross_value: float
+    discount_value: float
     net_value: float
     created_at: datetime
 
@@ -43,3 +60,5 @@ class SaleResponse(SaleBase):
 
     class Config:
         from_attributes = True
+
+
