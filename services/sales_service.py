@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal   # ✅ add this
 from sqlalchemy.orm import Session
 from models import Sale, Invoice, Appointment, OfferDiscount, Product, Package, Service
 from schemas.sales_schema import SaleCreate, SaleUpdate
@@ -11,30 +12,40 @@ def create_sale(db: Session, sale_data: SaleCreate) -> Sale:
     if not appointment:
         raise ValueError("Appointment not found")
 
-    # 2️⃣ Fetch item MRP based on item_type
+    # 2️⃣ Fetch item and determine gross value
+    item = None
+    gross_value = Decimal(0)
+
     if sale_data.item_type == "product":
         item = db.query(Product).filter(Product.id == sale_data.item_id).first()
+        if not item:
+            raise ValueError("Product not found")
+        gross_value = Decimal(item.mrp)
+
     elif sale_data.item_type == "service":
         item = db.query(Service).filter(Service.id == sale_data.item_id).first()
+        if not item:
+            raise ValueError("Service not found")
+        gross_value = Decimal(item.price)  # ✅ wrap as Decimal
+
     elif sale_data.item_type == "package":
         item = db.query(Package).filter(Package.id == sale_data.item_id).first()
+        if not item:
+            raise ValueError("Package not found")
+        gross_value = Decimal(item.series_package_cost_to_center)  # ✅ wrap as Decimal
+
     else:
         raise ValueError("Invalid item_type")
 
-    if not item:
-        raise ValueError(f"{sale_data.item_type} not found")
-
-    gross_value = getattr(item, "mrp", 0)  # take MRP for product/service/package
-
     # 3️⃣ Apply discount if exists
-    discount_value = 0
+    discount_value = Decimal(0)
     if sale_data.discount_id:
         discount = db.query(OfferDiscount).filter(OfferDiscount.id == sale_data.discount_id).first()
         if discount:
             if discount.discount_type == "fixed":
-                discount_value = discount.discount_value
+                discount_value = Decimal(discount.discount_value)
             elif discount.discount_type == "percentage":
-                discount_value = gross_value * (discount.discount_value / 100)
+                discount_value = gross_value * (Decimal(discount.discount_value) / Decimal(100))
 
     # 4️⃣ Calculate net
     net_value = gross_value - discount_value
@@ -55,7 +66,6 @@ def create_sale(db: Session, sale_data: SaleCreate) -> Sale:
     db.refresh(sale)
 
     return sale
-
 
 
 def get_sale(db: Session, sale_id: uuid.UUID) -> Sale | None:

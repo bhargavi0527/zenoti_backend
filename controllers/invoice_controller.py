@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from starlette.responses import Response
+
 from database.db import get_db
 from models import Invoice, Appointment, Guest, Collection
 from schemas.collection_schema import CollectionResponse
@@ -11,10 +13,13 @@ from datetime import datetime   # ✅ added
 
 router = APIRouter(prefix="/invoices", tags=["Invoices"])
 
-
-@router.post("/", response_model=InvoiceOut)
-def create_invoice_endpoint(invoice: InvoiceCreate, db: Session = Depends(get_db)):
-    return invoice_service.create_invoice(db, sale_id=invoice.sale_id)
+@router.post("/generate/{sale_id}")
+def generate_invoice(sale_id: uuid.UUID, db: Session = Depends(get_db)):
+    try:
+        invoice = invoice_service.create_invoice_from_sale(db, sale_id)
+        return {"message": "Invoice generated successfully", "invoice_id": str(invoice.id), "invoice_no": invoice.invoice_no}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/", response_model=List[InvoiceOut])
@@ -91,3 +96,32 @@ def get_collections_for_invoice(invoice_id: uuid.UUID, db: Session = Depends(get
     return [
         CollectionResponse.from_orm(collection) for collection in collections
     ]
+
+@router.get("/{invoice_id}/print")
+def print_invoice(invoice_id: uuid.UUID, db: Session = Depends(get_db)):
+    invoice = invoice_service.get_invoice(db, invoice_id)
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    pdf_bytes = invoice_service.generate_invoice_pdf(db, invoice)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=invoice_{invoice.invoice_no}.pdf"}
+    )
+
+
+@router.get("/{invoice_id}/download")
+def download_invoice(invoice_id: uuid.UUID, db: Session = Depends(get_db)):
+    invoice = invoice_service.get_invoice(db, invoice_id)
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    pdf_bytes = invoice_service.generate_invoice_pdf(db, invoice)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=invoice_{invoice.invoice_no}.pdf"}
+    )

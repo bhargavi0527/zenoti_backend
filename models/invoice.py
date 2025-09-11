@@ -38,7 +38,7 @@ class Invoice(Base):
     employee = relationship("Employee")
     collections = relationship("Collection", back_populates="invoice", cascade="all, delete-orphan")
     items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
-    payments = relationship("InvoicePayment", back_populates="invoice", cascade="all, delete-orphan")
+    # payments = relationship("InvoicePayment", back_populates="invoice", cascade="all, delete-orphan")
 
     @property
     def total_amount(self):

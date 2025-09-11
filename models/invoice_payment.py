@@ -18,6 +18,6 @@ class InvoicePayment(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # ✅ Relation
-    invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id"))
-    invoice = relationship("Invoice", back_populates="payments")
+    # ⬇️ Belongs to Sale (NOT Invoice directly anymore)
+    sale_id = Column(UUID(as_uuid=True), ForeignKey("sales.id"), nullable=False)
+    sale = relationship("Sale", back_populates="payments")

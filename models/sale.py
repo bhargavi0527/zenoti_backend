@@ -9,7 +9,7 @@ import uuid
 
 def generate_sale_no():
     # Example: SALE-<8 random hex digits>
-    return f"SALE-{uuid.uuid4().hex[:8]}"
+    return f"SALE-{uuid.uuid4().hex[:4]}"
 
 class Sale(Base):
     __tablename__ = "sales"
@@ -27,7 +27,13 @@ class Sale(Base):
     appointment_id = Column(UUID(as_uuid=True), ForeignKey("appointments.id"), nullable=False)
     appointment = relationship("Appointment", back_populates="sale", uselist=False)
 
+    # ⬇️ Payments now belong directly to Sale
+    payments = relationship("InvoicePayment", back_populates="sale", cascade="all, delete-orphan")
+
+    # ⬇️ Invoice is generated later from Sale + Payments
     invoice = relationship("Invoice", back_populates="sale", uselist=False)
+
     collections = relationship("Collection", back_populates="sale", cascade="all, delete-orphan")
+
     discount_id = Column(UUID(as_uuid=True), ForeignKey("offers_discounts.id"), nullable=True)
     offer_discount = relationship("OfferDiscount")

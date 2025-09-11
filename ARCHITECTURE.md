@@ -8,6 +8,12 @@ This backend is a FastAPI application with layered architecture:
 - Migrations: Alembic in `alembic/`
 - Schemas: Pydantic request/response models in `schemas/`
 
+New/changed since latest update:
+- Sales are linked one-to-one with Appointments and feed Invoice creation.
+- Offers & Discounts can be applied at sale time (fixed/percentage) affecting net values.
+- Collections reference both Invoice and Sale; collection numbers are generated server-side.
+- Invoice creation derives `invoice_no` from `sale_no` and sets `net_invoice_value` from the Sale.
+
 ### High-level Architecture
 
 ```
@@ -62,6 +68,11 @@ Flow:
 3. Controller calls Service with DTOs and Session.
 4. Service performs ORM queries/commands using Session.
 5. Database responds; objects mapped back and returned as response_model JSON.
+
+Notes on recent flows:
+- Creating an Appointment auto-creates a placeholder Sale linked to it.
+- Creating a Sale requires `appointment_id`, `item_type`, `item_id`, and optional `discount_id`; totals are computed.
+- Creating an Invoice requires `sale_id` and derives number/amounts from the Sale.
 ```
 
 ### Key Modules
@@ -154,6 +165,14 @@ Workflow: CRUD via `services.room_category_service`.
 
 Workflow: CRUD via `services.product_service` and `models.products.Product`.
 
+### Offers & Discounts (`/offers-discounts`)
+- POST `/` → create discount/offer
+- GET `/` → list offers
+- GET `/{offer_id}` → get offer
+- PUT `/{offer_id}` → update offer
+
+Workflow: `OfferDiscount` supports `item_type` (product/service/package) and `discount_type` (fixed/percentage). Applied at sale time to compute `discount_value`.
+
 ### Employees (`/employees`)
 - POST `/` → create employee
 - GET `/` → list employees
@@ -207,7 +226,7 @@ Workflow: item CRUD bound to invoice via FK, using `services.invoice_item_servic
 - POST `/get-or-create/{guest_id}` → idempotent fetch-or-create for a guest
 - GET `/{invoice_id}/collections` → list collections for invoice
 
-Workflow: invoice lifecycle; `get-or-create` checks existing open invoice for guest and creates if absent.
+Workflow: create takes `sale_id` (schema also includes `guest_id`), loads the sale, generates `invoice_no` using `sale_no`, and sets `net_invoice_value` from the sale. `get-or-create` (if enabled) checks existing open invoice for guest and creates if absent.
 
 ### Invoice Payments (`/payments`)
 - POST `/` → create invoice payment
@@ -225,7 +244,7 @@ Workflow: CRUD for payments linked to invoices; updates totals downstream via se
 - PUT `/{sale_id}` → update sale
 - DELETE `/{sale_id}` → delete sale
 
-Workflow: sale records often auto-created when creating appointments; independent CRUD supported.
+Workflow: explicit sale creation fetches the item (product/service/package) MRP, applies optional `OfferDiscount`, and computes `gross_value`, `discount_value`, `net_value`. A `sale_no` is auto-generated. Sales link one-to-one with an appointment and one-to-one with an invoice.
 
 ### Collections (`/collections`)
 - POST `/` → create collection (receipt/collection against invoice)
@@ -234,7 +253,7 @@ Workflow: sale records often auto-created when creating appointments; independen
 - PUT `/{col_id}` → update collection
 - DELETE `/{col_id}` → delete collection
 
-Workflow: collection entries reference invoices; services ensure consistency.
+Workflow: collection entries reference both `invoice_id` and `sale_id`; `collection_no` is generated server-side. Totals roll up to the invoice.
 
 ## Data and DB Layer
 
@@ -272,7 +291,7 @@ Workflow: collection entries reference invoices; services ensure consistency.
 
 ## Security & Cross-cutting Concerns
 
-- CORS allows `http://localhost:5173`
+- CORS allows `http://localhost:5173` and `http://127.0.0.1:5173`
 - Passwords hashed via `passlib` (`bcrypt`) in user service
 - No global auth/authorization middleware detected; add JWT/OAuth2 as needed
 
@@ -281,5 +300,121 @@ Workflow: collection entries reference invoices; services ensure consistency.
 - Environment: set `POSTGRES_*` variables or `.env`
 - Run app: `uvicorn main:app --reload`
 - Apply migrations: `alembic revision --autogenerate -m "msg" && alembic upgrade head`
+
+## Mermaid Diagrams
+
+```mermaid
+flowchart LR
+  Client[Web/Mobile Client]
+  App[FastAPI App]
+  Controllers[Controllers\\nAPIRouters]
+  Services[Services\\nBusiness Logic]
+  ORM[SQLAlchemy ORM]
+  DB[(PostgreSQL)]
+
+  Client -->|HTTP JSON| App --> Controllers --> Services --> ORM --> DB
+  DB --> ORM --> Services --> Controllers -->|JSON| Client
+```
+
+```mermaid
+classDiagram
+  class Appointment {
+    UUID id
+    DateTime start_time
+    UUID guest_id
+    UUID provider_id
+  }
+  class Sale {
+    UUID id
+    String sale_no
+    Float gross_value
+    Float discount_value
+    Float net_value
+    UUID appointment_id
+    UUID discount_id
+  }
+  class OfferDiscount {
+    UUID id
+    String item_type
+    UUID item_id
+    enum discount_type
+    Float discount_value
+  }
+  class Invoice {
+    UUID id
+    String invoice_no
+    Float gross_invoice_value
+    Float invoice_discount
+    Float net_invoice_value
+    UUID sale_id
+    UUID guest_id
+  }
+  class Collection {
+    UUID id
+    String collection_no
+    String payment_method
+    Float amount
+    UUID sale_id
+    UUID invoice_id
+  }
+  class Guest { UUID id }
+  class Product { UUID id, Float mrp }
+  class Service { UUID id, Float mrp }
+  class Package { UUID id, Float mrp }
+
+  Appointment --> "1" Sale : creates
+  Sale --> "0..1" Invoice : billed_by
+  Sale --> OfferDiscount : optional
+  Invoice --> "*" Collection : collects
+  Guest --> "*" Invoice : owns
+  Sale --> Appointment : for
+
+  Product <.. OfferDiscount
+  Service <.. OfferDiscount
+  Package <.. OfferDiscount
+```
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant C as Client
+  participant A as API (FastAPI)
+  participant S as Services
+  participant DB as PostgreSQL
+
+  Note over C,A: Create Appointment
+  C->>A: POST /appointments { ... }
+  A->>S: create_appointment(data)
+  S->>DB: INSERT Appointment
+  S->>DB: INSERT Sale (appointment_id, net=0)
+  S-->>A: Appointment
+  A-->>C: 201 Appointment
+
+  Note over C,A: Create Sale (with discount)
+  C->>A: POST /sales { appointment_id, item_type, item_id, discount_id }
+  A->>S: create_sale(dto)
+  S->>DB: SELECT Appointment, SELECT Item (by type)
+  S->>DB: SELECT OfferDiscount (optional)
+  S->>S: compute gross, discount, net
+  S->>DB: INSERT Sale (sale_no, values)
+  S-->>A: Sale
+  A-->>C: 201 Sale
+
+  Note over C,A: Create Invoice from Sale
+  C->>A: POST /invoices { sale_id, guest_id }
+  A->>S: create_invoice(sale_id)
+  S->>DB: SELECT Sale
+  S->>DB: INSERT Invoice (invoice_no from sale_no, net from sale)
+  S-->>A: Invoice
+  A-->>C: 201 Invoice
+
+  Note over C,A: Record Collection
+  C->>A: POST /collections { invoice_id, payment_method, amount }
+  A->>S: create_collection(dto)
+  S->>S: generate collection_no
+  S->>DB: INSERT Collection (links invoice_id & sale_id)
+  S-->>A: Collection
+  A-->>C: 201 Collection
+```
 
 
